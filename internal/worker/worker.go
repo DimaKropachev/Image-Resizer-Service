@@ -37,7 +37,11 @@ func (w *Worker) Start(ctx context.Context, queue chan *models.Task, errCh chan 
 		default:
 			for task := range queue {
 				w.stat.Total++
-				src := task.Img
+				src, err := imaging.Open(task.ImgPath)
+				if err != nil {
+					w.stat.Fail++
+					errCh <- fmt.Errorf("[%s] couldn't decode image: %w", task.ID, err)
+				}
 
 				now := time.Now()
 				thumbnail := imaging.Fit(src, 150, 150, imaging.Lanczos)
@@ -48,7 +52,7 @@ func (w *Worker) Start(ctx context.Context, queue chan *models.Task, errCh chan 
 
 				path := fmt.Sprintf("./storage/images/processed/%s/", task.ID)
 
-				err := imaging.Save(thumbnail, path+"thumbnail.jpg")
+				err = imaging.Save(thumbnail, path+"thumbnail.jpg")
 				if err != nil {
 					w.stat.Fail++
 					errCh <- fmt.Errorf("[%s] couldn't process thumbnail photo: %w", task.ID, err)

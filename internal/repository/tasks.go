@@ -2,10 +2,15 @@ package repository
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sync"
 
 	"github.com/dimakropachev/image_resizer_service/internal/models"
+)
+
+var (
+	ErrTaskNotFound = errors.New("task not found")
 )
 
 type Storage struct {
@@ -40,7 +45,7 @@ func (s *Storage) GetStatus(ctx context.Context, id string) (string, error, erro
 
 	_, exists := s.tasks[id]
 	if !exists {
-		return "", nil, fmt.Errorf("task with ID: %s not found", id)
+		return "", nil, ErrTaskNotFound
 	}
 
 	return s.tasks[id].Status, s.tasks[id].Err, nil
@@ -52,7 +57,7 @@ func (s *Storage) DeleteTask(ctx context.Context, id string) error {
 
 	_, exists := s.tasks[id]
 	if !exists {
-		return fmt.Errorf("task with ID: %s not found", id)
+		return ErrTaskNotFound
 	}
 
 	delete(s.tasks, id)
