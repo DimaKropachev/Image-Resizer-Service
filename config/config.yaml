@@ -1,0 +1,10 @@
+env: dev
+
+http:
+  host: localhost
+  port: 8088
+  timeout: 5s
+
+sizes:
+  - {name: thumbnail, width: 150, height: 150}
+  - {name: medium, width: 800, height: 600}

@@ -3,9 +3,16 @@ package http
 import (
 	"context"
 	"net/http"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 )
+
+type Config struct {
+	Host    string        `yaml:"host" env:"HTTP_HOST" env-default:"localhost"`
+	Port    int           `yaml:"port" env:"HTTP_PORT" env-default:"8088"`
+	Timeout time.Duration `yaml:"timeout" env:"HTTP_TIMEOUT" env-default:"5s"`
+}
 
 type Server struct {
 	s *http.Server
