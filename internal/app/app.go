@@ -2,7 +2,12 @@ package app
 
 import (
 	"context"
+	"log/slog"
+	"os"
+	"os/signal"
 	"sync"
+	"syscall"
+	"time"
 
 	"github.com/dimakropachev/image_resizer_service/internal/config"
 	"github.com/dimakropachev/image_resizer_service/internal/queue"
@@ -30,21 +35,29 @@ func (a *App) Start() {
 	handler := http.NewHandler(service)
 	server := http.NewServer(handler)
 
+	serverErrCh := make(chan error, 1)
+
 	wg := sync.WaitGroup{}
+
+	slog.Info("starting http server...")
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
+		slog.Info("http server started", slog.Int("port", a.cfg.HTTP.Port))
 		if err := server.Run(); err != nil {
-			panic(err)
+			serverErrCh <- err
+			return
 		}
 	}()
 
 	q := queue.New(ctx)
 	workerErrCh := make(chan error)
+	slog.Info("starting workers...")
 	for i := 1; i <= a.cfg.Workers; i++ {
 		wg.Add(1)
 		go func(id int) {
-			wg.Done()
+			defer wg.Done()
+			slog.Info("worker start", slog.Int("id", id))
 			w := worker.New(id)
 			w.Start(ctx, q, workerErrCh)
 		}(i)
@@ -55,6 +68,30 @@ func (a *App) Start() {
 		defer wg.Done()
 		handlerWorkerError(ctx, workerErrCh)
 	}()
+
+	// ---------------------Graceful Shutdown---------------------
+
+	shutdownCh := make(chan os.Signal, 1)
+	signal.Notify(shutdownCh, syscall.SIGINT, syscall.SIGTERM)
+
+	select {
+	case sign := <-shutdownCh:
+		slog.Info("Shutdown signal recieved, starting graceful shutdown...", slog.String("signal", sign.String()))
+	case serverErr := <-serverErrCh:
+		slog.Info("Critical server error, initialized graceful shutdown...", slog.String("error", serverErr.Error()))
+	}
+	// calling function that completes workers and closes queue
+	cancel()
+
+	shutdownContext, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	slog.Info("stopping http server...")
+	if err := server.Stop(shutdownContext); err != nil {
+		slog.Error("error shutdown http server", slog.String("error", err.Error()))
+	} else {
+		slog.Info("http server stopped")
+	}
 
 	wg.Wait()
 }
@@ -68,7 +105,7 @@ func handlerWorkerError(ctx context.Context, wErr <-chan error) {
 			if !ok {
 				return
 			}
-			// TODO: logging error
+			slog.Debug("worker error", slog.String("error", err.Error()))
 		}
 	}
 }
