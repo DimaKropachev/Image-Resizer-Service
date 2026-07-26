@@ -8,3 +8,5 @@ http:
 sizes:
   - {name: thumbnail, width: 150, height: 150}
   - {name: medium, width: 800, height: 600}
+
+worker_num: 4
