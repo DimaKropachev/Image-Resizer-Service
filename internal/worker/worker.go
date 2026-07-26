@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/dimakropachev/image_resizer_service/internal/models"
+	"github.com/dimakropachev/image_resizer_service/internal/queue"
 	"github.com/kovidgoyal/imaging"
 )
 
@@ -29,13 +29,17 @@ func New(id int) *Worker {
 	}
 }
 
-func (w *Worker) Start(ctx context.Context, queue chan *models.Task, errCh chan error) {
+func (w *Worker) Start(ctx context.Context, q *queue.Queue, errCh chan error) {
 	for {
 		select {
 		case <-ctx.Done():
 			return
 		default:
-			for task := range queue {
+			for {
+				task, ok := q.Get()
+				if !ok {
+					return
+				}
 				w.stat.Total++
 				src, err := imaging.Open(task.ImgPath)
 				if err != nil {

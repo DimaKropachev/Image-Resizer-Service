@@ -16,9 +16,10 @@ type Size struct {
 }
 
 type Config struct {
-	Env   string       `yaml:"env" env:"ENV" env-default:"prod"`
-	HTTP  http.Config `yaml:"http"`
-	Sizes []Size       `yaml:"sizes"`
+	Env     string      `yaml:"env" env:"ENV" env-default:"prod"`
+	HTTP    http.Config `yaml:"http"`
+	Sizes   []Size      `yaml:"sizes"`
+	Workers int         `yaml:"worker_num"`
 }
 
 func MustLoad(envPath, cfgPath string) *Config {

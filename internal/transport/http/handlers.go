@@ -24,6 +24,12 @@ type Handler struct {
 	s Service
 }
 
+func NewHandler(s Service) Handler {
+	return Handler{
+		s: s,
+	}
+}
+
 func (h *Handler) UploadImage(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 

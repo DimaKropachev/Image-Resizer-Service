@@ -1,9 +1,9 @@
 package main
 
 import (
-	"fmt"
 	"os"
 
+	"github.com/dimakropachev/image_resizer_service/internal/app"
 	"github.com/dimakropachev/image_resizer_service/internal/config"
 )
 
@@ -20,6 +20,6 @@ func main() {
 
 	cfg := config.MustLoad(envPath, cfgPath)
 
-	fmt.Println(*cfg)
-	// ...
+	app := app.New(cfg)
+	app.Start()
 }
