@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"mime"
 	"net/http"
 	"os"
 
@@ -33,12 +34,13 @@ func NewHandler(s Service) Handler {
 func (h *Handler) UploadImage(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	if r.Header.Get("Content-Type") != "multipart/form-data" {
+	mediaType, _, err := mime.ParseMediaType(r.Header.Get("Content-Type"))
+	if err != nil || mediaType != "multipart/form-data" {
 		httpError(w, "expected Content-Type multipart/form-data", http.StatusBadRequest)
 		return
 	}
 
-	err := r.ParseMultipartForm(10 << 20)
+	err = r.ParseMultipartForm(10 << 20)
 	if err != nil {
 		httpError(w, "couldn't make it out form: "+err.Error(), http.StatusBadRequest)
 		return
@@ -127,7 +129,7 @@ func (h *Handler) CheckStatus(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	if err = json.NewEncoder(w).Encode(struct {
 		Status string `json:"status"`
-		Err    error  `json:"error omitempty"`
+		Err    error  `json:"error,omitempty"`
 	}{
 		Status: tStatus,
 		Err:    tErr,
@@ -178,7 +180,6 @@ func (h *Handler) Download(w http.ResponseWriter, r *http.Request) {
 		}
 
 		w.Header().Set("Content-Type", "image/jpeg")
-		w.WriteHeader(http.StatusOK)
 		http.ServeContent(w, r, f.Name(), stat.ModTime(), f)
 
 	case models.StatusPending:

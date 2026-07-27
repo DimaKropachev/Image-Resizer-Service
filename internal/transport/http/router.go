@@ -2,6 +2,7 @@ package http
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -18,14 +19,17 @@ type Server struct {
 	s *http.Server
 }
 
-func NewServer(h Handler) *Server {
+func NewServer(cfg Config, h Handler) *Server {
 	router := chi.NewRouter()
 
-	router.Post("api/v1/upload", h.Download)
-	router.Get("api/v1/status", h.CheckStatus)
-	router.Get("api/v1/download", h.Download)
+	router.Post("/api/v1/upload", h.UploadImage)
+	router.Get("/api/v1/status", h.CheckStatus)
+	router.Get("/api/v1/download", h.Download)
+
+	addr := fmt.Sprintf("%s:%d", cfg.Host, cfg.Port)
 
 	s := &http.Server{
+		Addr: addr,
 		Handler: router,
 	}
 
