@@ -1,0 +1,30 @@
+FROM golang:1.25-alpine AS builder  
+
+WORKDIR /app
+COPY go.mod go.sum ./
+
+RUN go mod download
+
+COPY . .
+
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
+  -ldflags="-w -s" \
+  -o /app/bin/IRS \
+  ./cmd/main.go
+
+FROM alpine:latest AS runtime
+
+RUN apk add --no-cache ca-certificates tzdata
+
+RUN addgroup -g 1000 appusers && adduser -D -u 1000 -G appusers appuser
+
+WORKDIR /app
+
+COPY --from=builder /app/bin/IRS /app/IRS
+
+RUN chown -R appuser:appusers /app
+
+USER appuser
+
+FROM runtime AS IRS
+ENTRYPOINT [ "/app/IRS" ]
