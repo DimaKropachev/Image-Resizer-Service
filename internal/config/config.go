@@ -15,11 +15,17 @@ type Size struct {
 	Height int    `yaml:"height"`
 }
 
+type Storage struct {
+	UploadPath    string `yaml:"upload_dir" env:"UPLOAD_DIR"`
+	ProcessedPath string `yaml:"processed_dir" env:"PROCESSED_DIR"`
+}
+
 type Config struct {
 	Env     string      `yaml:"env" env:"ENV" env-default:"prod"`
 	HTTP    http.Config `yaml:"http"`
 	Sizes   []Size      `yaml:"sizes"`
 	Workers int         `yaml:"worker_num"`
+	Storage Storage     `yaml:"storage"`
 }
 
 func MustLoad(envPath, cfgPath string) *Config {

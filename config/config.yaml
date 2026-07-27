@@ -10,3 +10,6 @@ sizes:
   - {name: medium, width: 800, height: 600}
 
 worker_num: 4
+storage:
+  upload_dir: "./storage/images/uploads"
+  processed_dir: "./storage/images/processed"

@@ -20,6 +20,9 @@ func main() {
 
 	cfg := config.MustLoad(envPath, cfgPath)
 
-	app := app.New(cfg)
+	app, err := app.New(cfg)
+	if err != nil {
+		panic(err)
+	}
 	app.Start()
 }

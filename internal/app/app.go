@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"os"
@@ -23,10 +24,14 @@ type App struct {
 	cfg *config.Config
 }
 
-func New(cfg *config.Config) *App {
+func New(cfg *config.Config) (*App, error) {
+	if err := createStorage(cfg.Storage); err != nil {
+		return nil, err
+	}
+
 	return &App{
 		cfg: cfg,
-	}
+	}, nil
 }
 
 func (a *App) Start() {
@@ -110,4 +115,14 @@ func handlerWorkerError(ctx context.Context, wErr <-chan error) {
 			slog.Debug("worker error", slog.String("error", err.Error()))
 		}
 	}
+}
+
+func createStorage(paths config.Storage) error {
+	if err := os.MkdirAll(paths.UploadPath, 0644); err != nil {
+		return fmt.Errorf("couldn't create dir for upload img: %w", err)
+	}
+	if err := os.MkdirAll(paths.ProcessedPath, 0644); err != nil {
+		return fmt.Errorf("couldn't create dir for processed img: %w", err)
+	}
+	return nil
 }
