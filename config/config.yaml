@@ -1,7 +1,6 @@
 env: dev
 
 http:
-  host: localhost
   port: 8088
   timeout: 5s
 

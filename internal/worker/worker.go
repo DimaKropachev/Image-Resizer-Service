@@ -15,6 +15,7 @@ import (
 type Worker struct {
 	ID   int
 	stat *Statistics
+	out  string
 }
 
 type Statistics struct {
@@ -25,10 +26,11 @@ type Statistics struct {
 	allTime time.Duration
 }
 
-func New(id int) *Worker {
+func New(id int, out string) *Worker {
 	return &Worker{
 		ID:   id,
 		stat: &Statistics{},
+		out:  out,
 	}
 }
 
@@ -62,13 +64,14 @@ func (w *Worker) Start(ctx context.Context, q *queue.Queue, errCh chan error) {
 
 				w.stat.allTime += dur
 
-				path := fmt.Sprintf("./storage/images/processed/%s/", task.ID)
-				if err := os.Mkdir(path, 0644); err != nil {
+				path := fmt.Sprintf("%s/%s/", w.out, task.ID)
+				if err := os.MkdirAll(path, 0755); err != nil {
 					task.Status = models.StatusFailed
 					w.stat.Fail++
 					errCh <- fmt.Errorf("couldn't create dir for processed img: %w", err)
 					continue
 				}
+				fmt.Println(path)
 
 				err = imaging.Save(thumbnail, path+"thumbnail.jpg")
 				if err != nil {

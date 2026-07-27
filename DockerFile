@@ -21,10 +21,11 @@ RUN addgroup -g 1000 appusers && adduser -D -u 1000 -G appusers appuser
 WORKDIR /app
 
 COPY --from=builder /app/bin/IRS /app/IRS
+COPY --from=builder /app/config/config.yaml /app/config/config.yaml
 
 RUN chown -R appuser:appusers /app
 
 USER appuser
 
-FROM runtime AS IRS
+FROM runtime AS irs
 ENTRYPOINT [ "/app/IRS" ]

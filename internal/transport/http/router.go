@@ -10,7 +10,6 @@ import (
 )
 
 type Config struct {
-	Host    string        `yaml:"host" env:"HTTP_HOST" env-default:"localhost"`
 	Port    int           `yaml:"port" env:"HTTP_PORT" env-default:"8088"`
 	Timeout time.Duration `yaml:"timeout" env:"HTTP_TIMEOUT" env-default:"5s"`
 }
@@ -26,7 +25,7 @@ func NewServer(cfg Config, h Handler) *Server {
 	router.Get("/api/v1/status", h.CheckStatus)
 	router.Get("/api/v1/download", h.Download)
 
-	addr := fmt.Sprintf("%s:%d", cfg.Host, cfg.Port)
+	addr := fmt.Sprintf(":%d", cfg.Port)
 
 	s := &http.Server{
 		Addr: addr,

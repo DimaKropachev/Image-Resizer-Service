@@ -40,7 +40,7 @@ func (a *App) Start() {
 	repo := repository.New()
 	q := queue.New(ctx)
 	service := service.New(repo, q)
-	handler := h.NewHandler(service)
+	handler := h.NewHandler(service, a.cfg.Storage.UploadPath)
 	server := h.NewServer(a.cfg.HTTP, handler)
 
 	serverErrCh := make(chan error, 1)
@@ -51,7 +51,7 @@ func (a *App) Start() {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		slog.Info("http server started", slog.Int("port", a.cfg.HTTP.Port), slog.String("host", a.cfg.HTTP.Host))
+		slog.Info("http server started", slog.Int("port", a.cfg.HTTP.Port))
 		if err := server.Run(); err != nil && !errors.Is(err, http.ErrServerClosed){
 			serverErrCh <- err
 			return
@@ -65,16 +65,14 @@ func (a *App) Start() {
 		go func(id int) {
 			defer wg.Done()
 			slog.Info("worker start", slog.Int("id", id))
-			w := worker.New(id)
+			w := worker.New(id, a.cfg.Storage.ProcessedPath)
 			w.Start(ctx, q, workerErrCh)
 		}(i)
 	}
 
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 		handlerWorkerError(ctx, workerErrCh)
-	}()
+	})
 
 	// ---------------------Graceful Shutdown---------------------
 
@@ -118,10 +116,10 @@ func handlerWorkerError(ctx context.Context, wErr <-chan error) {
 }
 
 func createStorage(paths config.Storage) error {
-	if err := os.MkdirAll(paths.UploadPath, 0644); err != nil {
+	if err := os.MkdirAll(paths.UploadPath, 0755); err != nil {
 		return fmt.Errorf("couldn't create dir for upload img: %w", err)
 	}
-	if err := os.MkdirAll(paths.ProcessedPath, 0644); err != nil {
+	if err := os.MkdirAll(paths.ProcessedPath, 0755); err != nil {
 		return fmt.Errorf("couldn't create dir for processed img: %w", err)
 	}
 	return nil

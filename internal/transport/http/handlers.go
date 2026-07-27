@@ -22,12 +22,14 @@ type Service interface {
 }
 
 type Handler struct {
-	s Service
+	s       Service
+	upload string
 }
 
-func NewHandler(s Service) Handler {
+func NewHandler(s Service, upload string) Handler {
 	return Handler{
 		s: s,
+		upload: upload,
 	}
 }
 
@@ -76,7 +78,7 @@ func (h *Handler) UploadImage(w http.ResponseWriter, r *http.Request) {
 		httpError(w, "not allowed file format", http.StatusBadRequest)
 		return
 	}
-	path := fmt.Sprintf("./storage/images/uploads/%s.%s", id, ext)
+	path := fmt.Sprintf("%s/%s.%s",h.upload, id, ext)
 	if err = os.WriteFile(path, data, 0644); err != nil {
 		httpError(w, "error saving file", http.StatusInternalServerError)
 		return
@@ -169,14 +171,14 @@ func (h *Handler) Download(w http.ResponseWriter, r *http.Request) {
 		f, err := os.Open(path)
 		if err != nil {
 			httpError(w, "file not found", http.StatusNotFound)
-			return 
+			return
 		}
 		defer f.Close()
 
 		stat, err := f.Stat()
 		if err != nil {
 			httpError(w, "error reading file", http.StatusInternalServerError)
-			return 
+			return
 		}
 
 		w.Header().Set("Content-Type", "image/jpeg")
