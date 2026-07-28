@@ -122,7 +122,7 @@ func (h *Handler) CheckStatus(w http.ResponseWriter, r *http.Request) {
 	tStatus, tErr, err := h.s.GetStatus(ctx, taskID)
 	if err != nil {
 		if errors.Is(err, repository.ErrTaskNotFound) {
-			httpError(w, "couldn't get task status", http.StatusBadRequest)
+			httpError(w, "task not found", http.StatusNotFound)
 			return
 		}
 		httpError(w, "couldn't get task status", http.StatusInternalServerError)
@@ -160,7 +160,7 @@ func (h *Handler) Download(w http.ResponseWriter, r *http.Request) {
 	tStatus, tErr, err := h.s.GetStatus(ctx, taskID)
 	if err != nil {
 		if errors.Is(err, repository.ErrTaskNotFound) {
-			httpError(w, "couldn't get task status", http.StatusBadRequest)
+			httpError(w, "task not found", http.StatusNotFound)
 			return
 		}
 		httpError(w, "couldn't get task status", http.StatusInternalServerError)
@@ -223,6 +223,27 @@ func (h *Handler) Download(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func (h *Handler) DeleteTask(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	taskID := r.URL.Query().Get("id")
+	if taskID == "" {
+		httpError(w, "expected parameter id", http.StatusBadRequest)
+		return
+	}
+
+	if err := h.s.DeleteTask(ctx, taskID); err != nil {
+		if errors.Is(err, repository.ErrTaskNotFound) {
+			httpError(w, "task not found", http.StatusNotFound)
+			return
+		}
+		httpError(w, "couldn't delete task", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+ 
 func httpError(w http.ResponseWriter, msg string, status int) {
 	http.Error(w, msg, status)
 }

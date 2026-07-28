@@ -64,6 +64,9 @@ func (s *Storage) DeleteTask(ctx context.Context, id string) error {
 	if err := os.RemoveAll(task.OutPath); err != nil {
 		return fmt.Errorf("couldn't remove dir with img: %w", err)
 	}
+	if err := os.Remove(task.ImgPath); err != nil {
+		return fmt.Errorf("couldn't remove src img: %w", err)
+	}
 
 	delete(s.tasks, id)
 	return nil

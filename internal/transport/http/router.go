@@ -19,6 +19,7 @@ func NewServer(cfg config.HTTP, h Handler) *Server {
 	router.Post("/api/v1/upload", h.UploadImage)
 	router.Get("/api/v1/status", h.CheckStatus)
 	router.Get("/api/v1/download", h.Download)
+	router.Delete("/api/v1/delete", h.DeleteTask)
 
 	addr := fmt.Sprintf(":%d", cfg.Port)
 
