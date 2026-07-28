@@ -12,6 +12,7 @@ type Repository interface {
 	AddTask(context.Context, *models.Task) error
 	GetStatus(context.Context, string) (string, error, error)
 	DeleteTask(context.Context, string) error
+	DeleteAllTasks(context.Context) error
 }
 
 type Service struct {
@@ -57,6 +58,16 @@ func (s *Service) GetStatus(ctx context.Context, id string) (string, error, erro
 func (s *Service) DeleteTask(ctx context.Context, id string) error {
 	if err := s.repo.DeleteTask(ctx, id); err != nil {
 		slog.Error("failed to delete task",
+			slog.String("error", err.Error()),
+		)
+		return err
+	}
+	return nil
+}
+
+func (s *Service) DeleteAllTasks(ctx context.Context) error {
+	if err := s.repo.DeleteAllTasks(ctx); err != nil {
+		slog.Error("failed to delete all tasks",
 			slog.String("error", err.Error()),
 		)
 		return err

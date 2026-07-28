@@ -20,6 +20,7 @@ type Service interface {
 	AddTask(context.Context, *models.Task) error
 	GetStatus(context.Context, string) (string, error, error)
 	DeleteTask(context.Context, string) error
+	DeleteAllTasks(context.Context) error
 }
 
 type Handler struct {
@@ -227,23 +228,25 @@ func (h *Handler) DeleteTask(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	taskID := r.URL.Query().Get("id")
-	if taskID == "" {
-		httpError(w, "expected parameter id", http.StatusBadRequest)
-		return
-	}
-
-	if err := h.s.DeleteTask(ctx, taskID); err != nil {
-		if errors.Is(err, repository.ErrTaskNotFound) {
-			httpError(w, "task not found", http.StatusNotFound)
+	if taskID != "" {
+		if err := h.s.DeleteTask(ctx, taskID); err != nil {
+			if errors.Is(err, repository.ErrTaskNotFound) {
+				httpError(w, "task not found", http.StatusNotFound)
+				return
+			}
+			httpError(w, "couldn't delete task", http.StatusInternalServerError)
 			return
 		}
-		httpError(w, "couldn't delete task", http.StatusInternalServerError)
-		return
+	} else {
+		if err := h.s.DeleteAllTasks(ctx); err != nil {
+			httpError(w, "couldn't delete all tasks", http.StatusInternalServerError)
+			return
+		}
 	}
 
 	w.WriteHeader(http.StatusNoContent)
 }
- 
+
 func httpError(w http.ResponseWriter, msg string, status int) {
 	http.Error(w, msg, status)
 }
