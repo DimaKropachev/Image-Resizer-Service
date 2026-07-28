@@ -60,6 +60,8 @@ func (s *Storage) DeleteTask(ctx context.Context, id string) error {
 		return ErrTaskNotFound
 	}
 
+	
+
 	delete(s.tasks, id)
 	return nil
 }

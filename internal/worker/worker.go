@@ -15,7 +15,6 @@ import (
 type Worker struct {
 	ID   int
 	stat *Statistics
-	out  string
 }
 
 type Statistics struct {
@@ -26,11 +25,10 @@ type Statistics struct {
 	allTime time.Duration
 }
 
-func New(id int, out string) *Worker {
+func New(id int) *Worker {
 	return &Worker{
 		ID:   id,
 		stat: &Statistics{},
-		out:  out,
 	}
 }
 
@@ -71,17 +69,15 @@ func (w *Worker) Start(ctx context.Context, q *queue.Queue, errCh chan error) {
 
 				w.stat.allTime += dur
 
-				path := fmt.Sprintf("%s/%s/", w.out, task.ID)
-				if err := os.MkdirAll(path, 0755); err != nil {
+				if err := os.MkdirAll(task.OutPath, 0755); err != nil {
 					task.Status = models.StatusFailed
 					task.Err = fmt.Errorf("couldn't create dir for processed img: %w", err)
 					w.stat.Fail++
 					errCh <- fmt.Errorf("couldn't create dir for processed img: %w", err)
 					continue
 				}
-				fmt.Println(path)
 
-				err = imaging.Save(thumbnail, path+"thumbnail.jpg")
+				err = imaging.Save(thumbnail, task.OutPath+"thumbnail.jpg")
 				if err != nil {
 					task.Status = models.StatusFailed
 					task.Err = fmt.Errorf("couldn't process thumbnail photo: %w", err)
@@ -89,7 +85,7 @@ func (w *Worker) Start(ctx context.Context, q *queue.Queue, errCh chan error) {
 					errCh <- fmt.Errorf("[%s] couldn't process thumbnail photo: %w", task.ID, err)
 				}
 
-				err = imaging.Save(medium, path+"medium.jpg")
+				err = imaging.Save(medium, task.OutPath+"medium.jpg")
 				if err != nil {
 					task.Status = models.StatusFailed
 					task.Err = fmt.Errorf("couldn't process medium photo: %w", err)

@@ -4,21 +4,16 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"time"
 
+	"github.com/dimakropachev/image_resizer_service/internal/config"
 	"github.com/go-chi/chi/v5"
 )
-
-type Config struct {
-	Port    int           `yaml:"port" env:"HTTP_PORT" env-default:"8088"`
-	Timeout time.Duration `yaml:"timeout" env:"HTTP_TIMEOUT" env-default:"5s"`
-}
 
 type Server struct {
 	s *http.Server
 }
 
-func NewServer(cfg Config, h Handler) *Server {
+func NewServer(cfg config.HTTP, h Handler) *Server {
 	router := chi.NewRouter()
 
 	router.Post("/api/v1/upload", h.UploadImage)
@@ -28,7 +23,7 @@ func NewServer(cfg Config, h Handler) *Server {
 	addr := fmt.Sprintf(":%d", cfg.Port)
 
 	s := &http.Server{
-		Addr: addr,
+		Addr:    addr,
 		Handler: router,
 	}
 

@@ -10,6 +10,7 @@ const (
 type Task struct {
 	ID      string
 	ImgPath string
+	OutPath string
 	Status  string
 	Err     error
 }

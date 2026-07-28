@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/dimakropachev/image_resizer_service/internal/config"
 	"github.com/dimakropachev/image_resizer_service/internal/models"
 	"github.com/dimakropachev/image_resizer_service/internal/repository"
 	"github.com/google/uuid"
@@ -22,14 +23,14 @@ type Service interface {
 }
 
 type Handler struct {
-	s       Service
-	upload string
+	s     Service
+	paths config.Storage
 }
 
-func NewHandler(s Service, upload string) Handler {
+func NewHandler(s Service, paths config.Storage) Handler {
 	return Handler{
-		s: s,
-		upload: upload,
+		s:     s,
+		paths: paths,
 	}
 }
 
@@ -78,7 +79,7 @@ func (h *Handler) UploadImage(w http.ResponseWriter, r *http.Request) {
 		httpError(w, "not allowed file format", http.StatusBadRequest)
 		return
 	}
-	path := fmt.Sprintf("%s/%s.%s",h.upload, id, ext)
+	path := fmt.Sprintf("%s/%s.%s", h.paths.UploadPath, id, ext)
 	if err = os.WriteFile(path, data, 0644); err != nil {
 		httpError(w, "error saving file", http.StatusInternalServerError)
 		return
@@ -87,6 +88,7 @@ func (h *Handler) UploadImage(w http.ResponseWriter, r *http.Request) {
 	task := &models.Task{
 		ID:      id,
 		ImgPath: path,
+		OutPath: fmt.Sprintf("%s/%s/", h.paths.ProcessedPath, id),
 		Status:  models.StatusPending,
 	}
 

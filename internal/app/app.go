@@ -40,7 +40,7 @@ func (a *App) Start() {
 	repo := repository.New()
 	q := queue.New(ctx)
 	service := service.New(repo, q)
-	handler := h.NewHandler(service, a.cfg.Storage.UploadPath)
+	handler := h.NewHandler(service, a.cfg.Storage)
 	server := h.NewServer(a.cfg.HTTP, handler)
 
 	serverErrCh := make(chan error, 1)
@@ -69,7 +69,7 @@ func (a *App) Start() {
 			slog.Info("worker start",
 				slog.Int("id", id),
 			)
-			w := worker.New(id, a.cfg.Storage.ProcessedPath)
+			w := worker.New(id)
 			w.Start(ctx, q, workerErrCh)
 		}(i)
 	}
