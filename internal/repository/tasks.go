@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 	"sync"
 
 	"github.com/dimakropachev/image_resizer_service/internal/models"
@@ -55,12 +56,14 @@ func (s *Storage) DeleteTask(ctx context.Context, id string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	_, exists := s.tasks[id]
+	task, exists := s.tasks[id]
 	if !exists {
 		return ErrTaskNotFound
 	}
 
-	
+	if err := os.RemoveAll(task.OutPath); err != nil {
+		return fmt.Errorf("couldn't remove dir with img: %w", err)
+	}
 
 	delete(s.tasks, id)
 	return nil
