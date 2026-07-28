@@ -38,6 +38,9 @@ func (w *Worker) Start(ctx context.Context, q *queue.Queue, errCh chan error) {
 	for {
 		select {
 		case <-ctx.Done():
+			slog.Info("worker stopped",
+				slog.Int("id", w.ID),
+			)
 			return
 		default:
 			for {
@@ -45,7 +48,10 @@ func (w *Worker) Start(ctx context.Context, q *queue.Queue, errCh chan error) {
 				if !ok {
 					return
 				}
-				slog.Info("worker get task", slog.Int("worker_id", w.ID), slog.String("task_id", task.ID))
+				slog.Info("worker get task",
+					slog.Int("worker_id", w.ID),
+					slog.String("task_id", task.ID),
+				)
 
 				task.Status = models.StatusProcessing
 
@@ -53,6 +59,7 @@ func (w *Worker) Start(ctx context.Context, q *queue.Queue, errCh chan error) {
 				src, err := imaging.Open(task.ImgPath)
 				if err != nil {
 					task.Status = models.StatusFailed
+					task.Err = fmt.Errorf("couldn't decode image: %w", err)
 					w.stat.Fail++
 					errCh <- fmt.Errorf("[%s] couldn't decode image: %w", task.ID, err)
 				}
@@ -67,6 +74,7 @@ func (w *Worker) Start(ctx context.Context, q *queue.Queue, errCh chan error) {
 				path := fmt.Sprintf("%s/%s/", w.out, task.ID)
 				if err := os.MkdirAll(path, 0755); err != nil {
 					task.Status = models.StatusFailed
+					task.Err = fmt.Errorf("couldn't create dir for processed img: %w", err)
 					w.stat.Fail++
 					errCh <- fmt.Errorf("couldn't create dir for processed img: %w", err)
 					continue
@@ -76,6 +84,7 @@ func (w *Worker) Start(ctx context.Context, q *queue.Queue, errCh chan error) {
 				err = imaging.Save(thumbnail, path+"thumbnail.jpg")
 				if err != nil {
 					task.Status = models.StatusFailed
+					task.Err = fmt.Errorf("couldn't process thumbnail photo: %w", err)
 					w.stat.Fail++
 					errCh <- fmt.Errorf("[%s] couldn't process thumbnail photo: %w", task.ID, err)
 				}
@@ -83,13 +92,17 @@ func (w *Worker) Start(ctx context.Context, q *queue.Queue, errCh chan error) {
 				err = imaging.Save(medium, path+"medium.jpg")
 				if err != nil {
 					task.Status = models.StatusFailed
+					task.Err = fmt.Errorf("couldn't process medium photo: %w", err)
 					w.stat.Fail++
 					errCh <- fmt.Errorf("[%s] couldn't process medium photo: %w", task.ID, err)
 				}
 				task.Status = models.StatusDone
 				w.stat.Success++
 
-				slog.Info("worker processed task", slog.Int("worker_id", w.ID), slog.String("task_id", task.ID))
+				slog.Info("worker processed task",
+					slog.Int("worker_id", w.ID),
+					slog.String("task_id", task.ID),
+				)
 			}
 		}
 	}

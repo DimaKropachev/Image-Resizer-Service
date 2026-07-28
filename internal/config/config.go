@@ -1,8 +1,8 @@
 package config
 
 import (
-	"fmt"
 	"log/slog"
+	"os"
 
 	"github.com/dimakropachev/image_resizer_service/internal/transport/http"
 	"github.com/ilyakaznacheev/cleanenv"
@@ -39,7 +39,8 @@ func MustLoad(envPath, cfgPath string) *Config {
 
 	cfg := &Config{}
 	if err := cleanenv.ReadConfig(cfgPath, cfg); err != nil {
-		panic(fmt.Errorf("couldn't read config file: %w", err))
+		slog.Error("failed to read config file", slog.String("error", err.Error()))
+		os.Exit(1)
 	}
 
 	return cfg

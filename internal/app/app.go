@@ -51,8 +51,10 @@ func (a *App) Start() {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		slog.Info("http server started", slog.Int("port", a.cfg.HTTP.Port))
-		if err := server.Run(); err != nil && !errors.Is(err, http.ErrServerClosed){
+		slog.Info("http server started",
+			slog.Int("port", a.cfg.HTTP.Port),
+		)
+		if err := server.Run(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			serverErrCh <- err
 			return
 		}
@@ -64,7 +66,9 @@ func (a *App) Start() {
 		wg.Add(1)
 		go func(id int) {
 			defer wg.Done()
-			slog.Info("worker start", slog.Int("id", id))
+			slog.Info("worker start",
+				slog.Int("id", id),
+			)
 			w := worker.New(id, a.cfg.Storage.ProcessedPath)
 			w.Start(ctx, q, workerErrCh)
 		}(i)
@@ -81,9 +85,13 @@ func (a *App) Start() {
 
 	select {
 	case sign := <-shutdownCh:
-		slog.Info("Shutdown signal recieved, starting graceful shutdown...", slog.String("signal", sign.String()))
+		slog.Info("Shutdown signal recieved, starting graceful shutdown...",
+			slog.String("signal", sign.String()),
+		)
 	case serverErr := <-serverErrCh:
-		slog.Info("Critical server error, initialized graceful shutdown...", slog.String("error", serverErr.Error()))
+		slog.Info("Critical server error, initialized graceful shutdown...",
+			slog.String("error", serverErr.Error()),
+		)
 	}
 	// calling function that completes workers and closes queue
 	cancel()
@@ -93,7 +101,9 @@ func (a *App) Start() {
 
 	slog.Info("stopping http server...")
 	if err := server.Stop(shutdownContext); err != nil {
-		slog.Error("error shutdown http server", slog.String("error", err.Error()))
+		slog.Error("error shutdown http server",
+			slog.String("error", err.Error()),
+		)
 	} else {
 		slog.Info("http server stopped")
 	}
@@ -110,7 +120,9 @@ func handlerWorkerError(ctx context.Context, wErr <-chan error) {
 			if !ok {
 				return
 			}
-			slog.Debug("worker error", slog.String("error", err.Error()))
+			slog.Warn("worker error",
+				slog.String("error", err.Error()),
+			)
 		}
 	}
 }

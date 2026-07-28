@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"log/slog"
 
 	"github.com/dimakropachev/image_resizer_service/internal/models"
 	"github.com/dimakropachev/image_resizer_service/internal/queue"
@@ -27,13 +28,38 @@ func New(repo Repository, q *queue.Queue) *Service {
 
 func (s *Service) AddTask(ctx context.Context, task *models.Task) error {
 	s.q.Add(task)
-	return s.repo.AddTask(ctx, task)
+	if err := s.repo.AddTask(ctx, task); err != nil {
+		slog.Error("failed to add task",
+			slog.String("error", err.Error()),
+		)
+		return err
+	}
+	return nil
 }
 
 func (s *Service) GetStatus(ctx context.Context, id string) (string, error, error) {
-	return s.repo.GetStatus(ctx, id)
+	status, tErr, err := s.repo.GetStatus(ctx, id)
+	if tErr != nil {
+		slog.Debug("error during task execution",
+			slog.String("task_id", id),
+			slog.String("error", err.Error()),
+		)
+	}
+	if err != nil {
+		slog.Error("failed to get status task",
+			slog.String("error", err.Error()),
+		)
+		return "", nil, err
+	}
+	return status, tErr, nil
 }
 
 func (s *Service) DeleteTask(ctx context.Context, id string) error {
-	return s.repo.DeleteTask(ctx, id)
+	if err := s.repo.DeleteTask(ctx, id); err != nil {
+		slog.Error("failed to delete task",
+			slog.String("error", err.Error()),
+		)
+		return err
+	}
+	return nil
 }
