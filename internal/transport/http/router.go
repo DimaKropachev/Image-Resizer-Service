@@ -21,6 +21,8 @@ func NewServer(cfg config.HTTP, h Handler) *Server {
 	router.Get("/api/v1/download", h.Download)
 	router.Delete("/api/v1/delete", h.DeleteTask)
 
+	router.Get("/api/v1/worker", h.GetWorkerStat)
+
 	addr := fmt.Sprintf(":%d", cfg.Port)
 
 	s := &http.Server{

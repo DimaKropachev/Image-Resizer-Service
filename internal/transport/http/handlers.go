@@ -9,10 +9,12 @@ import (
 	"mime"
 	"net/http"
 	"os"
+	"strconv"
 
 	"github.com/dimakropachev/image_resizer_service/internal/config"
 	"github.com/dimakropachev/image_resizer_service/internal/models"
 	"github.com/dimakropachev/image_resizer_service/internal/repository"
+	wm "github.com/dimakropachev/image_resizer_service/internal/worker_manager"
 	"github.com/google/uuid"
 )
 
@@ -25,12 +27,14 @@ type Service interface {
 
 type Handler struct {
 	s     Service
+	wm    *wm.WorkerManager
 	paths config.Storage
 }
 
-func NewHandler(s Service, paths config.Storage) Handler {
+func NewHandler(s Service, wm *wm.WorkerManager, paths config.Storage) Handler {
 	return Handler{
 		s:     s,
+		wm:    wm,
 		paths: paths,
 	}
 }
@@ -245,6 +249,33 @@ func (h *Handler) DeleteTask(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusNoContent)
+}
+
+func (h *Handler) GetWorkerStat(w http.ResponseWriter, r *http.Request) {
+	wID := r.URL.Query().Get("id")
+	if wID == "" {
+		httpError(w, "expected parameter id", http.StatusBadRequest)
+		return
+	}
+
+	wIDInt, err := strconv.Atoi(wID)
+	if err != nil {
+		httpError(w, "parameter id must be int", http.StatusBadRequest)
+		return
+	}
+
+	stat, err := h.wm.GetStat(wIDInt)
+	if err != nil {
+		httpError(w, "worker not found", http.StatusNotFound)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	if err := json.NewEncoder(w).Encode(stat); err != nil {
+		httpError(w, "error send response", http.StatusInternalServerError)
+		return
+	}
 }
 
 func httpError(w http.ResponseWriter, msg string, status int) {

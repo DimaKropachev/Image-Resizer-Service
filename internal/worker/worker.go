@@ -18,10 +18,10 @@ type Worker struct {
 }
 
 type Statistics struct {
-	Total   int
-	Fail    int
-	Success int
-	AvgTime time.Duration
+	Total   int           `json:"total_img"`
+	Fail    int           `json:"fail_img"`
+	Success int           `json:"success_img"`
+	AvgTime time.Duration `json:"avg_time_ms"`
 	allTime time.Duration
 }
 
@@ -105,6 +105,8 @@ func (w *Worker) Start(ctx context.Context, q *queue.Queue, errCh chan error) {
 }
 
 func (w *Worker) GetStat() *Statistics {
-	w.stat.AvgTime = w.stat.allTime / time.Duration(w.stat.Total)
+	if w.stat.Total != 0 {
+		w.stat.AvgTime = time.Duration((w.stat.allTime / time.Duration(w.stat.Total)).Milliseconds())
+	}
 	return w.stat
 }

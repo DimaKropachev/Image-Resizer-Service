@@ -18,6 +18,7 @@ import (
 	"github.com/dimakropachev/image_resizer_service/internal/service"
 	h "github.com/dimakropachev/image_resizer_service/internal/transport/http"
 	"github.com/dimakropachev/image_resizer_service/internal/worker"
+	wm "github.com/dimakropachev/image_resizer_service/internal/worker_manager"
 )
 
 type App struct {
@@ -40,7 +41,8 @@ func (a *App) Start() {
 	repo := repository.New()
 	q := queue.New(ctx)
 	service := service.New(repo, q)
-	handler := h.NewHandler(service, a.cfg.Storage)
+	wm := wm.New()
+	handler := h.NewHandler(service, wm, a.cfg.Storage)
 	server := h.NewServer(a.cfg.HTTP, handler)
 
 	serverErrCh := make(chan error, 1)
@@ -70,7 +72,9 @@ func (a *App) Start() {
 				slog.Int("id", id),
 			)
 			w := worker.New(id)
+			wm.Register(id, w)
 			w.Start(ctx, q, workerErrCh)
+			wm.Unregister(id)
 		}(i)
 	}
 
