@@ -71,7 +71,7 @@ func (a *App) Start() {
 			slog.Info("worker start",
 				slog.Int("id", id),
 			)
-			w := worker.New(id)
+			w := worker.New(id, a.cfg.Sizes)
 			wm.Register(id, w)
 			w.Start(ctx, q, workerErrCh)
 			wm.Unregister(id)

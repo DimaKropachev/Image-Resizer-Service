@@ -7,14 +7,16 @@ import (
 	"os"
 	"time"
 
+	"github.com/dimakropachev/image_resizer_service/internal/config"
 	"github.com/dimakropachev/image_resizer_service/internal/models"
 	"github.com/dimakropachev/image_resizer_service/internal/queue"
 	"github.com/kovidgoyal/imaging"
 )
 
 type Worker struct {
-	ID   int
-	stat *Statistics
+	ID    int
+	stat  *Statistics
+	sizes []config.Size
 }
 
 type Statistics struct {
@@ -25,10 +27,11 @@ type Statistics struct {
 	allTime time.Duration
 }
 
-func New(id int) *Worker {
+func New(id int, sizes []config.Size) *Worker {
 	return &Worker{
-		ID:   id,
-		stat: &Statistics{},
+		ID:    id,
+		stat:  &Statistics{},
+		sizes: sizes,
 	}
 }
 
@@ -62,13 +65,6 @@ func (w *Worker) Start(ctx context.Context, q *queue.Queue, errCh chan error) {
 					errCh <- fmt.Errorf("[%s] couldn't decode image: %w", task.ID, err)
 				}
 
-				now := time.Now()
-				thumbnail := imaging.Fit(src, 150, 150, imaging.Lanczos)
-				medium := imaging.Fit(src, 800, 600, imaging.Lanczos)
-				dur := time.Since(now)
-
-				w.stat.allTime += dur
-
 				if err := os.MkdirAll(task.OutPath, 0755); err != nil {
 					task.Status = models.StatusFailed
 					task.Err = fmt.Errorf("couldn't create dir for processed img: %w", err)
@@ -77,21 +73,23 @@ func (w *Worker) Start(ctx context.Context, q *queue.Queue, errCh chan error) {
 					continue
 				}
 
-				err = imaging.Save(thumbnail, task.OutPath+"thumbnail.jpg")
-				if err != nil {
-					task.Status = models.StatusFailed
-					task.Err = fmt.Errorf("couldn't process thumbnail photo: %w", err)
-					w.stat.Fail++
-					errCh <- fmt.Errorf("[%s] couldn't process thumbnail photo: %w", task.ID, err)
+				now := time.Now()
+
+				for _, size := range w.sizes {
+					img := imaging.Fit(src, size.Width, size.Height, imaging.Lanczos)
+					path := fmt.Sprintf("%s%s.jpg", task.OutPath, size.Name)
+					err = imaging.Save(img, path)
+					if err != nil {
+						task.Status = models.StatusFailed
+						task.Err = fmt.Errorf("couldn't save %s photo: %w", size.Name, err)
+						w.stat.Fail++
+						errCh <- fmt.Errorf("[%s] couldn't save %s photo: %w", task.ID, size.Name, err)
+					}
 				}
 
-				err = imaging.Save(medium, task.OutPath+"medium.jpg")
-				if err != nil {
-					task.Status = models.StatusFailed
-					task.Err = fmt.Errorf("couldn't process medium photo: %w", err)
-					w.stat.Fail++
-					errCh <- fmt.Errorf("[%s] couldn't process medium photo: %w", task.ID, err)
-				}
+				dur := time.Since(now)
+
+				w.stat.allTime += dur
 				task.Status = models.StatusDone
 				w.stat.Success++
 
