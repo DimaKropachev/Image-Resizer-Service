@@ -58,9 +58,9 @@ Allows you to find out the current state of image processing.
 Returns the finished image or information about its readiness.
 
 - **Request format**:
-  - `id' - task ID 
-  - `size' - the desired size (name from the configuration file)
-- **Response**: If the task is not completed, its status will be returned. If the task is completed, the server will send the file `image/jpeg'
+  - `id` - task ID 
+  - `size` - the desired size (name from the configuration file)
+- **Response**: If the task is not completed, its status will be returned. If the task is completed, the server will send the file `image/jpeg`
 
 ### DELTE /api/v1/delete?id={task-id}
 
